@@ -1,0 +1,44 @@
+# This workflow builds and deploys the backend service (Loan or Catalogue) to Azure Functions
+# It runs automatically whenever code is pushed to the "main" branch
+
+name: Backend Deploy
+
+on:
+  push:
+    branches:
+      - main   # Trigger pipeline only when pushing to main branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest   # Use a Linux runner provided by GitHub
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Setup Node.js environment (version 18 is stable for Azure Functions)
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Step 3: Install dependencies for the backend service
+      # Adjust "working-directory" to either ./loan-service or ./catalogue-service
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./loan-service
+
+      # Step 4: Run tests (optional but recommended for CI)
+      - name: Run tests
+        run: npm test
+        working-directory: ./loan-service
+
+      # Step 5: Deploy to Azure Functions using publish profile secret
+      # The publish profile must be stored in GitHub Secrets as AZURE_FUNCTIONAPP_PUBLISH_PROFILE
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        with:
+          app-name: loan-service-func   # Replace with your actual Azure Function App name
+          package: ./loan-service       # Path to backend service folder
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
