@@ -1,27 +1,33 @@
-# This workflow builds and deploys the frontend web app (HTML/JS) to Azure Storage Static Website
-# It runs automatically whenever code is pushed to the "main" branch
+# Workflow: Deploy frontend (HTML/JS/CSS) to Azure Storage Static Website
+# Trigger: Runs automatically when code is pushed to the "main" branch
 
 name: Frontend Deploy
 
 on:
   push:
     branches:
-      - main   # Trigger pipeline only when pushing to main branch
+      - main   # Only run pipeline when pushing to main branch
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest   # Use a Linux runner provided by GitHub
+    runs-on: ubuntu-latest   # GitHub-hosted Linux runner
 
     steps:
-      # Step 1: Checkout the repository code
+      # Step 1: Checkout repository code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Upload frontend files to Azure Storage
-      # Requires AZURE_STORAGE_CONNECTION_STRING secret in GitHub
-      - name: Deploy to Azure Storage Static Website
-        uses: azure/storage-blob-upload-action@v1
+      # Step 2: Install Azure CLI
+      - name: Setup Azure CLI
+        uses: azure/CLI@v1
         with:
-          connection-string: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
-          container-name: '$web'        # Special container for static website hosting
-          source: ./frontend            # Path to your frontend folder (index.html, script.js, CSS)
+          azcliversion: 2.30.0
+
+      # Step 3: Upload frontend files to Azure Storage
+      # Requires secret: AZURE_STORAGE_CONNECTION_STRING
+      - name: Upload frontend to Azure Storage
+        run: |
+          az storage blob upload-batch \
+            --connection-string ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }} \
+            --destination '$web' \
+            --source ./frontend
